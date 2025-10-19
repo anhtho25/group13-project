@@ -1,13 +1,22 @@
 const express = require("express");
 const router = express.Router();
-const { getUsers, addUser } = require("../controllers/userController");
+const {
+  getUsers,
+  addUser,
+  updateUser,
+  deleteUser,
+} = require("../controllers/userController");
 
-// ✅ Các route người dùng
-// GET  /api/users  → lấy danh sách người dùng
+// GET /api/users
 router.get("/users", getUsers);
 
-// POST /api/users  → thêm người dùng mới
+// POST /api/users
 router.post("/users", addUser);
 
-// ✅ Xuất router để server.js sử dụng
+// PUT /api/users/:id
+router.put("/users/:id", updateUser);
+
+// DELETE /api/users/:id
+router.delete("/users/:id", deleteUser);
+
 module.exports = router;
