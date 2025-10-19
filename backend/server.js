@@ -1,25 +1,36 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const cors = require('cors');
-const userRoutes = require('./routes/user');
+// ✅ server.js — phiên bản sửa lỗi CORS triệt để
 
-dotenv.config();
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const connectDB = require("./config/db");
+const userRoutes = require("./routes/user");
+
+dotenv.config(); // ✅ Đọc file .env
+connectDB(); // ✅ Kết nối MongoDB
+
 const app = express();
 
-// ✅ Cho phép React (port 3001 hoặc 3002) gọi API backend
-app.use(cors({
-  origin: ['http://localhost:3001', 'http://localhost:3002']
-}));
+// ✅ Cho phép mọi origin (an toàn trong DEV)
+app.use(cors());
 
-// ✅ Cho phép đọc JSON từ body
+// Hoặc nếu bạn chỉ muốn cho phép React app cụ thể:
+// app.use(cors({
+//   origin: ["http://localhost:3006", "http://localhost:3001", "http://localhost:3000"],
+//   methods: ["GET", "POST"],
+//   allowedHeaders: ["Content-Type"],
+// }));
+
+// ✅ Đọc JSON body từ request
 app.use(express.json());
 
-// ✅ Đăng ký routes
-app.use('/api', userRoutes);
+// ✅ Các routes API
+app.use("/api", userRoutes);
 
-app.get('/', (req, res) => {
-  res.send('✅ Backend is running! Go to /api/users');
+// ✅ Route test backend
+app.get("/", (req, res) => {
+  res.send("✅ Backend is running and CORS is working!");
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
