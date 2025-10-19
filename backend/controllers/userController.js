@@ -40,4 +40,48 @@ const addUser = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, addUser };
+// ✅ PUT /users/:id - Cập nhật thông tin người dùng
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Tìm và cập nhật user theo id
+    const updatedUser = await User.findByIdAndUpdate(id, req.body, {
+      new: true, // Trả về dữ liệu sau khi cập nhật
+      runValidators: true, // Kiểm tra validate của model
+    });
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(500).json({
+      message: "Lỗi khi cập nhật người dùng",
+      error: error.message,
+    });
+  }
+};
+
+// ✅ DELETE /users/:id - Xóa người dùng
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    res.json({ message: "Đã xóa người dùng thành công" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Lỗi khi xóa người dùng",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { getUsers, addUser, updateUser, deleteUser };
