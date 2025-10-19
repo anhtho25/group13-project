@@ -9,6 +9,11 @@ const {
 
 // GET /api/users
 router.get("/users", getUsers);
+// ✅ chỉ cần "/users" vì đã prefix /api ở server.js
+router.post("/users", addUser);
+
+router.get("/users", getUsers);
+router.post("/users", addUser);
 
 // POST /api/users
 router.post("/users", addUser);
