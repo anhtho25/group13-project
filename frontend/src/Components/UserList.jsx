@@ -29,7 +29,7 @@ export default function UserList() {
       try {
         await axios.delete(`http://localhost:3000/api/users/${id}`);
         alert("✅ Đã xóa user thành công!");
-        fetchUsers(); // load lại danh sách
+        fetchUsers(); // Load lại danh sách
       } catch (error) {
         console.error("❌ Lỗi khi xóa user:", error);
         alert("❌ Không thể xóa user!");
@@ -46,10 +46,15 @@ export default function UserList() {
 
   // 💾 Lưu thay đổi user (PUT)
   const handleSave = async (id) => {
+    if (!editName.trim() || !editEmail.trim()) {
+      alert("⚠️ Vui lòng nhập đầy đủ tên và email!");
+      return;
+    }
+
     try {
       await axios.put(`http://localhost:3000/api/users/${id}`, {
-        name: editName,
-        email: editEmail,
+        name: editName.trim(),
+        email: editEmail.trim(),
       });
       alert("✅ Cập nhật user thành công!");
       setEditingUser(null);
@@ -71,18 +76,14 @@ export default function UserList() {
               {editingUser === user._id ? (
                 // Nếu đang sửa user này
                 <>
-                  <label>
-                    <strong>Tên: </strong>
-                  </label>
+                  <label><strong>Tên:</strong></label>
                   <input
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                   />
                   <br />
-                  <label>
-                    <strong>Email: </strong>
-                  </label>
+                  <label><strong>Email:</strong></label>
                   <input
                     type="email"
                     value={editEmail}
