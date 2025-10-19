@@ -7,20 +7,32 @@ export default function AddUser({ onUserAdded }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!name || !email) {
+      alert("⚠️ Vui lòng nhập đầy đủ thông tin!");
+      return;
+    }
+
     const newUser = { name, email };
 
     try {
       console.log("📤 Gửi dữ liệu tới backend:", newUser);
-      const res = await axios.post("http://localhost:3000/api/users", newUser);
+      const res = await axios.post(
+        "http://localhost:3000/api/users",
+        newUser,
+        {
+          headers: { "Content-Type": "application/json" }, // 👈 thêm dòng này
+        }
+      );
       console.log("✅ Server trả về:", res.data);
+      alert("✅ Thêm user thành công!");
 
-      alert("Thêm user thành công!");
       setName("");
       setEmail("");
       if (onUserAdded) onUserAdded();
     } catch (error) {
       console.error("❌ Lỗi khi thêm user:", error);
-      alert("Không thể thêm user!");
+      alert("❌ Không thể thêm user!");
     }
   };
 
