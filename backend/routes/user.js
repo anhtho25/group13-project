@@ -2,8 +2,12 @@ const express = require("express");
 const router = express.Router();
 const { getUsers, addUser } = require("../controllers/userController");
 
-// ✅ chỉ cần "/users" vì đã prefix /api ở server.js
+// ✅ Các route người dùng
+// GET  /api/users  → lấy danh sách người dùng
 router.get("/users", getUsers);
+
+// POST /api/users  → thêm người dùng mới
 router.post("/users", addUser);
 
+// ✅ Xuất router để server.js sử dụng
 module.exports = router;
