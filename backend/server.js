@@ -11,9 +11,11 @@ connectDB();
 
 const app = express();
 
+// Cấu hình CORS để chấp nhận request từ frontend
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: '*',  // Cho phép tất cả các origin trong môi trường development
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 
