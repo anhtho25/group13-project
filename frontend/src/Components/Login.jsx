@@ -1,10 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import "../styles/custom.css";
 
 function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -13,10 +15,15 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await API.post("/login", formData);
+      const res = await API.post("/auth/login", formData);
       localStorage.setItem("token", res.data.token);
       setMessage("Đăng nhập thành công! ✅");
       console.log("Token:", res.data.token);
+
+      // chuyển sang trang profile sau 700ms để người dùng thấy message
+      setTimeout(() => {
+        navigate('/profile');
+      }, 700);
     } catch (error) {
       setMessage(error.response?.data?.message || "Sai email hoặc mật khẩu ❌");
     }

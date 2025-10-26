@@ -35,9 +35,18 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp email và mật khẩu' });
+    }
+
     // Kiểm tra user tồn tại
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Email không tồn tại' });
+    // Kiểm tra password tồn tại trên user document
+    if (!user.password) {
+      // Trường hợp account không có password (ví dụ đăng bằng OAuth hoặc dữ liệu thiếu)
+      return res.status(400).json({ message: 'Tài khoản chưa có mật khẩu. Vui lòng đặt lại mật khẩu.' });
+    }
 
     // So sánh mật khẩu
     const isMatch = await bcrypt.compare(password, user.password);

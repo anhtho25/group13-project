@@ -4,7 +4,7 @@ import API from "../services/api";
 function LogoutButton() {
   const handleLogout = async () => {
     try {
-      await API.post("/logout");
+  await API.post("/auth/logout");
     } catch (e) {
       console.log("Đã logout phía client");
     }

@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const path = require('path');
 
 // Import các route
 const authRoutes = require('./routes/authRoutes'); 
@@ -23,6 +24,9 @@ app.use(cors({
 }));
 
 app.use(express.json()); // Parse JSON body
+
+// serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ Route chính
 app.use('/api/auth', authRoutes);

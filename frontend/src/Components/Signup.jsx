@@ -25,7 +25,7 @@ function Signup() {
         return;
       }
 
-      const res = await API.post("/signup", formData);
+  const res = await API.post("/auth/signup", formData);
       setMessage("Đăng ký thành công! 🎉");
       console.log(res.data);
       
