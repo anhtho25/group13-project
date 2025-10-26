@@ -2,16 +2,19 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
-const authRoutes = require('./routes/authRoutes'); // ✅ đúng tên file
 
-dotenv.config(); // load biến môi trường
+// Import các route
+const authRoutes = require('./routes/authRoutes'); 
+const profileRoutes = require('./routes/profileRoutes');
+
+dotenv.config(); // Load biến môi trường
 
 // Kết nối MongoDB
 connectDB();
 
 const app = express();
 
-// Cấu hình CORS để chấp nhận request từ frontend
+// Cấu hình CORS
 app.use(cors({
   origin: '*',  // Cho phép tất cả các origin trong môi trường development
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -19,14 +22,17 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json()); // parse JSON body
+app.use(express.json()); // Parse JSON body
 
 // ✅ Route chính
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 
+// Route test
 app.get('/', (req, res) => {
   res.send('✅ Backend is running!');
 });
 
+// Server start
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
