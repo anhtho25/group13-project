@@ -3,7 +3,7 @@ const User = require("../models/User");
 // ✅ GET /users - Lấy danh sách người dùng
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find(); // Lấy toàn bộ user từ MongoDB
+    const users = await User.find();
     res.json(users);
   } catch (error) {
     res.status(500).json({
@@ -19,15 +19,12 @@ const addUser = async (req, res) => {
     console.log("📥 req.body nhận được:", req.body);
 
     const { name, email } = req.body || {};
-
-    // Kiểm tra dữ liệu gửi lên
     if (!name || !email) {
       return res
         .status(400)
         .json({ message: "Vui lòng gửi JSON có name và email" });
     }
 
-    // Tạo user mới và lưu vào MongoDB
     const newUser = new User({ name, email });
     await newUser.save();
 
@@ -44,11 +41,9 @@ const addUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Tìm và cập nhật user theo id
     const updatedUser = await User.findByIdAndUpdate(id, req.body, {
-      new: true, // Trả về dữ liệu sau khi cập nhật
-      runValidators: true, // Kiểm tra validate của model
+      new: true,
+      runValidators: true,
     });
 
     if (!updatedUser) {
@@ -68,7 +63,6 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-
     const deletedUser = await User.findByIdAndDelete(id);
 
     if (!deletedUser) {
@@ -84,4 +78,38 @@ const deleteUser = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, addUser, updateUser, deleteUser };
+// ✅ GET /profile - Xem thông tin cá nhân
+const getProfile = async (req, res) => {
+  try {
+    // req.user được gán trong middleware verifyToken
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi lấy thông tin cá nhân", error: error.message });
+  }
+};
+
+// ✅ PUT /profile - Cập nhật thông tin cá nhân
+const updateProfile = async (req, res) => {
+  try {
+    const updates = req.body;
+    const user = await User.findByIdAndUpdate(req.user.id, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    res.json({ message: "Cập nhật thành công", user });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi cập nhật thông tin cá nhân", error: error.message });
+  }
+};
+
+// ✅ Export tất cả hàm
+module.exports = { getUsers, addUser, updateUser, deleteUser, getProfile, updateProfile };
