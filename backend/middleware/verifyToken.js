@@ -1,20 +1,32 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User'); // import model để tìm user trong DB
 
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'No token provided' });
+    return res.status(401).json({ message: 'Không có token' });
   }
 
   const token = authHeader.split(' ')[1];
 
   try {
+    // Giải mã token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // lưu thông tin user vào request
+
+    // Tìm user trong DB để lấy role và thông tin khác
+    const user = await User.findById(decoded.id).select('_id email role');
+
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    // Gán user vào req để các controller dùng
+    req.user = user;
+
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Invalid or expired token' });
+    res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn', error: error.message });
   }
 };
 

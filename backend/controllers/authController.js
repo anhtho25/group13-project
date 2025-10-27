@@ -13,7 +13,7 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: 'Email đã tồn tại' });
 
     // ❌ Không cần hash ở đây vì User.js đã tự hash trong pre('save')
-    const newUser = new User({ name, email, password });
+    const newUser = new User({ name, email, password, role: "admin" });
     await newUser.save();
 
     res.status(201).json({
