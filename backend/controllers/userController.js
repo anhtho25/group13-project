@@ -1,9 +1,14 @@
 const User = require("../models/User");
 
-// ✅ GET /users - Lấy danh sách người dùng
+// ✅ [GET] /users - Admin xem danh sách người dùng
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    // Chỉ admin mới được xem danh sách user
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Chỉ admin mới được phép truy cập" });
+    }
+
+    const users = await User.find().select("-password"); // Ẩn mật khẩu
     res.json(users);
   } catch (error) {
     res.status(500).json({
@@ -13,19 +18,21 @@ const getUsers = async (req, res) => {
   }
 };
 
-// ✅ POST /users - Thêm người dùng mới
+// ✅ [POST] /users - (Tùy chọn, chỉ admin được thêm user)
 const addUser = async (req, res) => {
   try {
-    console.log("📥 req.body nhận được:", req.body);
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Chỉ admin mới được phép thêm user" });
+    }
 
-    const { name, email } = req.body || {};
+    const { name, email, role = "user" } = req.body || {};
     if (!name || !email) {
       return res
         .status(400)
         .json({ message: "Vui lòng gửi JSON có name và email" });
     }
 
-    const newUser = new User({ name, email });
+    const newUser = new User({ name, email, role });
     await newUser.save();
 
     res.status(201).json(newUser);
@@ -37,14 +44,20 @@ const addUser = async (req, res) => {
   }
 };
 
-// ✅ PUT /users/:id - Cập nhật thông tin người dùng
+// ✅ [PUT] /users/:id - Admin hoặc chính chủ mới được cập nhật
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Nếu không phải admin và không phải chính chủ → cấm
+    if (req.user.role !== "admin" && req.user._id.toString() !== id) {
+      return res.status(403).json({ message: "Không có quyền cập nhật user này" });
+    }
+
     const updatedUser = await User.findByIdAndUpdate(id, req.body, {
       new: true,
       runValidators: true,
-    });
+    }).select("-password");
 
     if (!updatedUser) {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
@@ -59,10 +72,16 @@ const updateUser = async (req, res) => {
   }
 };
 
-// ✅ DELETE /users/:id - Xóa người dùng
+// ✅ [DELETE] /users/:id - Admin hoặc chính chủ mới được xóa
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Nếu không phải admin và không phải chính chủ → cấm
+    if (req.user.role !== "admin" && req.user._id.toString() !== id) {
+      return res.status(403).json({ message: "Không có quyền xóa user này" });
+    }
+
     const deletedUser = await User.findByIdAndDelete(id);
 
     if (!deletedUser) {
@@ -78,21 +97,23 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// ✅ GET /profile - Xem thông tin cá nhân
+// ✅ [GET] /profile - Xem thông tin cá nhân
 const getProfile = async (req, res) => {
   try {
-    // req.user được gán trong middleware verifyToken
     const user = await User.findById(req.user.id).select("-password");
     if (!user) {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: "Lỗi khi lấy thông tin cá nhân", error: error.message });
+    res.status(500).json({
+      message: "Lỗi khi lấy thông tin cá nhân",
+      error: error.message,
+    });
   }
 };
 
-// ✅ PUT /profile - Cập nhật thông tin cá nhân
+// ✅ [PUT] /profile - Cập nhật thông tin cá nhân
 const updateProfile = async (req, res) => {
   try {
     const updates = req.body;
@@ -107,9 +128,19 @@ const updateProfile = async (req, res) => {
 
     res.json({ message: "Cập nhật thành công", user });
   } catch (error) {
-    res.status(500).json({ message: "Lỗi khi cập nhật thông tin cá nhân", error: error.message });
+    res.status(500).json({
+      message: "Lỗi khi cập nhật thông tin cá nhân",
+      error: error.message,
+    });
   }
 };
 
 // ✅ Export tất cả hàm
-module.exports = { getUsers, addUser, updateUser, deleteUser, getProfile, updateProfile };
+module.exports = {
+  getUsers,
+  addUser,
+  updateUser,
+  deleteUser,
+  getProfile,
+  updateProfile,
+};
