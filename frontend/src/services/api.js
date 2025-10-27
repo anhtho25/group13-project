@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Cấu hình API với endpoint chính xác
 const API = axios.create({
-  baseURL: "http://localhost:5000/api/auth",
+  baseURL: "http://localhost:5000/api",
   headers: {
     'Content-Type': 'application/json',
   }
