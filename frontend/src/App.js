@@ -6,6 +6,7 @@ import Login from "./Components/Login";
 import Profile from "./Components/Profile";
 import LogoutConfirm from "./Components/LogoutConfirm";
 import BackButton from "./Components/BackButton";
+import AdminPage from "./Components/AdminPage";
 import "./styles/header.css";
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/logout" element={<LogoutConfirm />} />
+          <Route path="/admin/users" element={<AdminPage />} />
         </Routes>
       </div>
     </Router>

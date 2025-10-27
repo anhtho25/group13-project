@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import UserList from './UserList';
 import '../styles/custom.css';
 
 function Profile() {
@@ -20,6 +21,7 @@ function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedPreview, setSelectedPreview] = useState(null);
+  const [activeTab, setActiveTab] = useState('profile');
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -196,17 +198,28 @@ function Profile() {
           {/* Right: details & form */}
           <div className="md:col-span-2">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">Hồ sơ của tôi</h2>
-              {!isEditing ? (
+              <div className="flex items-center gap-4">
+                <h2 className="text-2xl font-bold">Hồ sơ của tôi</h2>
+                {/* Tabs (only show admin tab if role === 'admin') */}
+                {profile.role === 'admin' && (
+                  <div className="ml-4 flex items-center gap-2">
+                    <button onClick={() => setActiveTab('profile')} className={`px-3 py-1 rounded ${activeTab === 'profile' ? 'bg-purple-600 text-white' : 'bg-gray-100'}`}>Hồ sơ</button>
+                    <button onClick={() => setActiveTab('admin')} className={`px-3 py-1 rounded ${activeTab === 'admin' ? 'bg-purple-600 text-white' : 'bg-gray-100'}`}>Quản lý Users</button>
+                  </div>
+                )}
+              </div>
+
+              {!isEditing && activeTab === 'profile' ? (
                 <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">Chỉnh sửa</button>
-              ) : (
+              ) : activeTab === 'profile' ? (
                 <div className="flex gap-2">
                   <button onClick={() => { setProfile(originalProfile); setIsEditing(false); setMessage(''); }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">Hủy</button>
                 </div>
-              )}
+              ) : null}
             </div>
 
-            {isEditing ? (
+            {activeTab === 'profile' ? (
+              isEditing ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-gray-700 mb-2">Tên</label>
@@ -251,12 +264,18 @@ function Profile() {
                   <button type="button" onClick={() => { setProfile(originalProfile); setIsEditing(false); setMessage(''); }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md">Hủy</button>
                 </div>
               </form>
-            ) : (
-              <div className="space-y-3">
-                <div className="bg-gray-50 p-4 rounded-md">
-                  <p className="text-sm text-gray-600"><span className="font-semibold">Tên:</span> {profile.name || '-'}</p>
-                  <p className="text-sm text-gray-600"><span className="font-semibold">Email:</span> {profile.email || '-'}</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <p className="text-sm text-gray-600"><span className="font-semibold">Tên:</span> {profile.name || '-'}</p>
+                    <p className="text-sm text-gray-600"><span className="font-semibold">Email:</span> {profile.email || '-'}</p>
+                  </div>
                 </div>
+              )
+            ) : (
+              // Admin tab: show UserList embedded
+              <div className="mt-2">
+                <UserList initialAdmin={true} />
               </div>
             )}
 

@@ -6,8 +6,12 @@ function BackButton() {
   const navigate = useNavigate();
 
   const handleBack = () => {
-    // Nếu có lịch sử trình duyệt thì quay lại, nếu không thì về Home
-    if (window.history.length > 1) {
+    // Nếu đang ở trang Profile hoặc các trang con của nó, luôn về Home
+    if (window.location.pathname.startsWith('/profile') || window.location.pathname.startsWith('/admin')) {
+      navigate('/');
+    }
+    // Còn lại, nếu có lịch sử thì quay lại, không thì về Home
+    else if (window.history.length > 1) {
       navigate(-1);
     } else {
       navigate('/');

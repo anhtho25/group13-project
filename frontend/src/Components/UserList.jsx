@@ -1,114 +1,142 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import API from "../services/api";
 
-export default function UserList() {
+export default function UserList({ initialAdmin = false }) {
   const [users, setUsers] = useState([]);
-  const [editingUser, setEditingUser] = useState(null);
-  const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const navigate = useNavigate();
 
-  // ✅ Gọi API khi component load
   useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // 📥 Hàm lấy danh sách users
-  const fetchUsers = async () => {
-    try {
-      const res = await axios.get("http://localhost:3000/api/users");
-      console.log("📥 Nhận dữ liệu users:", res.data);
-      setUsers(res.data);
-    } catch (error) {
-      console.error("❌ Lỗi khi lấy danh sách users:", error);
-    }
-  };
-
-  // 🗑️ Xóa user
-  const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc muốn xóa user này không?")) {
-      try {
-        await axios.delete(`http://localhost:3000/api/users/${id}`);
-        alert("✅ Đã xóa user thành công!");
-        fetchUsers(); // Load lại danh sách
-      } catch (error) {
-        console.error("❌ Lỗi khi xóa user:", error);
-        alert("❌ Không thể xóa user!");
+    (async () => {
+      if (initialAdmin) {
+        setIsAdmin(true);
+        await loadUsers();
+      } else {
+        await checkAdminAndLoad();
       }
-    }
-  };
+    })();
+  }, [initialAdmin]);
 
-  // ✏️ Bắt đầu sửa user
-  const handleEdit = (user) => {
-    setEditingUser(user._id);
-    setEditName(user.name);
-    setEditEmail(user.email);
-  };
-
-  // 💾 Lưu thay đổi user (PUT)
-  const handleSave = async (id) => {
-    if (!editName.trim() || !editEmail.trim()) {
-      alert("⚠️ Vui lòng nhập đầy đủ tên và email!");
-      return;
-    }
-
+  // Kiểm tra role từ /profile và nếu là admin thì load users
+  const checkAdminAndLoad = async () => {
     try {
-      await axios.put(`http://localhost:3000/api/users/${id}`, {
-        name: editName.trim(),
-        email: editEmail.trim(),
-      });
-      alert("✅ Cập nhật user thành công!");
-      setEditingUser(null);
-      fetchUsers();
-    } catch (error) {
-      console.error("❌ Lỗi khi cập nhật user:", error);
-      alert("❌ Không thể cập nhật user!");
+      setLoading(true);
+      const res = await API.get("/profile");
+      if (res.data?.role !== "admin") {
+        setIsAdmin(false);
+        alert("Bạn không có quyền truy cập trang này.");
+        navigate("/");
+        return;
+      }
+      setIsAdmin(true);
+      await loadUsers();
+    } catch (err) {
+      console.error("Lỗi kiểm tra quyền:", err);
+      setError("Bạn cần đăng nhập để truy cập.");
+      navigate('/login');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get("/users");
+      setUsers(res.data || []);
+      setError(null);
+    } catch (err) {
+      console.error("Lỗi load users:", err);
+      setError("Không thể lấy danh sách users.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    const meToken = localStorage.getItem('token');
+    if (!window.confirm("Bạn có chắc muốn xóa user này không?")) return;
+    try {
+      setDeletingId(id);
+      await API.delete(`/users/${id}`);
+      // Nếu admin xóa chính mình, logout
+      const meRes = await API.get('/profile');
+      if (meRes.data?._id === id) {
+        localStorage.removeItem('token');
+        alert('Bạn đã xóa chính tài khoản của mình. Hệ thống sẽ chuyển hướng tới trang đăng nhập.');
+        navigate('/login');
+        return;
+      }
+      alert('Đã xóa user thành công');
+      await loadUsers();
+    } catch (err) {
+      console.error('Lỗi khi xóa user:', err);
+      if (err.response?.status === 403) alert('Bạn không có quyền xóa user này');
+      else alert('Xóa thất bại');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (loading) return <div className="p-4">Đang tải...</div>;
+  if (error) return <div className="p-4 text-red-500">{error}</div>;
 
   return (
-    <div>
-      <h3>Danh sách Users</h3>
+    <div className="h-full flex flex-col">
+      <h2 className="text-2xl font-bold mb-4">Trang Admin - Quản lý Users</h2>
 
-      {users.length > 0 ? (
-        <ul>
-          {users.map((user) => (
-            <li key={user._id}>
-              {editingUser === user._id ? (
-                // Nếu đang sửa user này
-                <>
-                  <label><strong>Tên:</strong></label>
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                  />
-                  <br />
-                  <label><strong>Email:</strong></label>
-                  <input
-                    type="email"
-                    value={editEmail}
-                    onChange={(e) => setEditEmail(e.target.value)}
-                  />
-                  <br />
-                  <button onClick={() => handleSave(user._id)}>💾 Lưu</button>
-                  <button onClick={() => setEditingUser(null)}>❌ Hủy</button>
-                </>
-              ) : (
-                // Nếu đang hiển thị bình thường
-                <>
-                  <strong>ID:</strong> {user._id} <br />
-                  <strong>Tên:</strong> {user.name} <br />
-                  <strong>Email:</strong> {user.email} <br />
-                  <button onClick={() => handleEdit(user)}>✏️ Sửa</button>
-                  <button onClick={() => handleDelete(user._id)}>🗑️ Xóa</button>
-                  <hr />
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+      {!isAdmin ? (
+        <div className="text-red-500">Bạn không có quyền truy cập.</div>
       ) : (
-        <p>Không có user nào!</p>
+        <div className="flex-1 overflow-hidden border rounded-lg bg-white">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b">
+                  <th className="sticky top-0 px-4 py-2 text-left">STT</th>
+                  <th className="sticky top-0 px-4 py-2 text-left">Họ tên</th>
+                  <th className="sticky top-0 px-4 py-2 text-left">Email</th>
+                  <th className="sticky top-0 px-4 py-2 text-left">Vai trò</th>
+                  <th className="sticky top-0 px-4 py-2 text-center">Hành động</th>
+                </tr>
+              </thead>
+            <tbody>
+              {users.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center p-4 border-b">Không có user nào</td>
+                </tr>
+              )}
+              {users.map((u, idx) => (
+                <tr key={u._id} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-3 text-center">{idx + 1}</td>
+                  <td className="px-4 py-3">{u.name}</td>
+                  <td className="px-4 py-3">{u.email}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                      u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {u.role || 'user'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 disabled:opacity-50 transition-colors"
+                      onClick={() => handleDelete(u._id)}
+                      disabled={deletingId === u._id}
+                    >
+                      {deletingId === u._id ? 'Đang xóa...' : 'Xóa'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
       )}
     </div>
   );
