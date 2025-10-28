@@ -25,7 +25,10 @@ const storage = new CloudinaryStorage({
     allowed_formats: ['jpg', 'jpeg', 'png'],
   },
 });
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // Giới hạn 2MB
+});
 
 // =============================
 // 🧩 Đăng ký
@@ -33,12 +36,15 @@ const upload = multer({ storage });
 exports.signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    if (!name || !email || !password)
+      return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin' });
 
     const existingUser = await User.findOne({ email });
     if (existingUser)
       return res.status(400).json({ message: 'Email đã tồn tại' });
 
-    const newUser = new User({ name, email, password, role: "user" });
+   const newUser = new User({ name, email, password, role: "user" });
+
     await newUser.save();
 
     res.status(201).json({
@@ -47,14 +53,14 @@ exports.signup = async (req, res) => {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        role: newUser.role
-      }
+        role: newUser.role,
+      },
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('❌ Lỗi signup:', err.message);
+    res.status(500).json({ message: 'Lỗi server khi đăng ký' });
   }
 };
-
 // =============================
 // 🔐 Đăng nhập
 // =============================
@@ -64,19 +70,24 @@ exports.login = async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: 'Vui lòng nhập email và mật khẩu' });
 
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Email không tồn tại' });
+    // ⚡ Lấy user có password (vì password bị select: false trong model)
+    const user = await User.findOne({ email }).select('+password');
+    if (!user)
+      return res.status(400).json({ message: 'Email không tồn tại' });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    // ⚡ So sánh mật khẩu
+    const isMatch = await user.matchPassword(password);
     if (!isMatch)
       return res.status(400).json({ message: 'Sai mật khẩu' });
 
+    // ⚡ Tạo JWT token
     const token = jwt.sign(
       { id: user._id, email: user.email },
-      process.env.JWT_SECRET || 'secretkey',
+      process.env.JWT_SECRET || 'supersecretkey',
       { expiresIn: '1h' }
     );
 
+    // ⚡ Trả về thông tin (ẩn password)
     res.status(200).json({
       message: 'Đăng nhập thành công',
       token,
@@ -88,10 +99,10 @@ exports.login = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('❌ Lỗi đăng nhập:', err.message);
+    res.status(500).json({ message: 'Lỗi server khi đăng nhập' });
   }
 };
-
 // =============================
 // 🚪 Đăng xuất
 // =============================
@@ -107,50 +118,69 @@ exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
     if (!user)
-      return res.status(404).json({ message: 'Không tìm thấy người dùng với email này' });
+      return res
+        .status(404)
+        .json({ message: 'Không tìm thấy người dùng với email này' });
 
-    const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const resetToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET || 'mysecretkey',
+      { expiresIn: '15m' }
+    );
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    // Không cần gửi mail thật, chỉ log ra để test MongoDB
     console.log('🔗 Link reset password:', resetLink);
 
     res.status(200).json({
       message: 'Đã tạo link đặt lại mật khẩu (xem console để lấy link)',
-      resetLink
+      resetLink,
     });
   } catch (error) {
     console.error('❌ Lỗi forgotPassword:', error.message);
     res.status(500).json({ message: 'Lỗi server khi tạo token reset' });
   }
 };
-
 // =============================
-// 🔑 Đặt lại mật khẩu
+// 🔑 Đặt lại mật khẩu (FINAL FIXED)
 // =============================
 exports.resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { newPassword } = req.body;
 
+    // 🔹 Giải mã token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
-    if (!user)
+    const user = await User.findById(decoded.id).select('+password');
+    if (!user) {
       return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
 
+    // 🔹 Hash lại mật khẩu mới trước khi lưu
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
-    await user.save();
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    res.status(200).json({ message: 'Đặt lại mật khẩu thành công' });
+    // 🔹 Gán và lưu lại
+    user.password = hashedPassword;
+    user.resetToken = undefined;
+    user.resetTokenExpire = undefined;
+
+    // ⚡ RẤT QUAN TRỌNG: Bỏ validateBeforeSave để tránh lỗi rehash
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json({ message: 'Đặt lại mật khẩu thành công' });
   } catch (error) {
-    console.error('❌ Lỗi resetPassword:', error.message);
-    res.status(500).json({ message: 'Token hết hạn hoặc không hợp lệ' });
+    console.error('❌ Lỗi resetPassword:', error);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(400).json({ message: 'Token đã hết hạn' });
+    }
+    return res.status(400).json({ message: 'Token không hợp lệ hoặc lỗi server' });
   }
 };
 
+
+
 // =============================
-// 🖼️ Upload Avatar (Cloudinary)
+// 🖼️ Upload Avatar
 // =============================
 exports.uploadAvatar = [
   upload.single('avatar'),
@@ -158,13 +188,15 @@ exports.uploadAvatar = [
     try {
       const { userId } = req.body;
       if (!req.file || !req.file.path)
-        return res.status(400).json({ message: 'Không có ảnh nào được tải lên' });
+        return res
+          .status(400)
+          .json({ message: 'Không có ảnh nào được tải lên' });
 
       const user = await User.findById(userId);
       if (!user)
         return res.status(404).json({ message: 'Không tìm thấy người dùng' });
 
-      user.avatar = req.file.path;
+      user.avatar = req.file.path || req.file.secure_url;
       await user.save();
 
       res.status(200).json({
@@ -173,10 +205,11 @@ exports.uploadAvatar = [
       });
     } catch (error) {
       console.error('❌ Lỗi uploadAvatar:', error.message);
-      res.status(500).json({ message: 'Lỗi khi tải ảnh lên Cloudinary' });
+      res
+        .status(500)
+        .json({ message: 'Lỗi khi tải ảnh lên Cloudinary' });
     }
   },
 ];
 
-// ✅ fix: export tất cả các hàm đã gán bằng exports.*
 module.exports = exports;
