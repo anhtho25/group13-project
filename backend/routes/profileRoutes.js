@@ -1,28 +1,56 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { getProfile, updateProfile, uploadAvatar } = require('../controllers/profileController'); // ✅ đổi từ userController -> profileController
-const verifyToken = require('../middleware/verifyToken');
-const multer = require('multer');
+const {
+  getProfile,
+  updateProfile,
+  uploadAvatar,
+} = require("../controllers/profileController");
+const verifyToken = require("../middleware/verifyToken");
+const multer = require("multer");
+const path = require("path");
 
-// cấu hình multer đơn giản lưu vào thư mục uploads
+// ===============================
+// ⚙️ CẤU HÌNH MULTER - Lưu tạm ảnh vào thư mục /uploads
+// ===============================
 const storage = multer.diskStorage({
-	destination: function (req, file, cb) {
-		cb(null, 'uploads/');
-	},
-	filename: function (req, file, cb) {
-		const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-		cb(null, uniqueSuffix + '-' + file.originalname.replace(/\s+/g, '_'));
-	}
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // lưu tạm ảnh trước khi đẩy lên Cloudinary
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, uniqueSuffix + ext);
+  },
 });
-const upload = multer({ storage });
+
+// Bộ lọc chỉ chấp nhận ảnh JPG, PNG
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [".jpg", ".jpeg", ".png"];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (!allowedTypes.includes(ext)) {
+    return cb(new Error("Chỉ cho phép file .jpg, .jpeg, .png"), false);
+  }
+  cb(null, true);
+};
+
+// Tạo instance multer
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // giới hạn 5MB
+});
+
+// ===============================
+// 🧩 ROUTES
+// ===============================
 
 // Xem thông tin cá nhân
-router.get('/', verifyToken, getProfile);
+router.get("/", verifyToken, getProfile);
 
 // Cập nhật thông tin cá nhân
-router.put('/', verifyToken, updateProfile);
+router.put("/", verifyToken, updateProfile);
 
-// Upload avatar
-router.post('/avatar', verifyToken, upload.single('avatar'), uploadAvatar);
+// Upload avatar (Cloudinary)
+router.post("/avatar", verifyToken, upload.single("avatar"), uploadAvatar);
 
 module.exports = router;
