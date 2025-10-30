@@ -27,13 +27,17 @@ cloudinary.config({
 console.log('✅ Cloudinary configured successfully');
 
 // ===============================
-// 🌐 Middleware
+// 🌐 Middleware (CORS FIXED)
 // ===============================
 app.use(
   cors({
-    origin: '*', // ⚠️ Có thể thay bằng ['http://localhost:3000'] nếu frontend cố định
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: [
+      "http://localhost:3000",
+      "https://group13-project-jade.vercel.app" // 👈 frontend Vercel domain của bạn
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
 
@@ -61,7 +65,8 @@ app.get('/', (req, res) => {
 });
 
 // ===============================
-// ⚠️ Global Error Handler (nên có để debug dễ)
+// ⚠️ Global Error Handler
+// ===============================
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.message);
   res.status(err.status || 500).json({
