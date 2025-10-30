@@ -29,14 +29,21 @@ console.log('✅ Cloudinary configured successfully');
 // ===============================
 // 🌐 Middleware (CORS FIXED cho Render + Vercel)
 // ===============================
+
+// ✅ Cho phép localhost + mọi subdomain vercel.app
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://group13-project-3tf01ea2o-group13-projects-projects.vercel.app", // 👈 domain frontend vercel của m
+  /\.vercel\.app$/  // 👈 regex: cho phép tất cả domain có đuôi vercel.app
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) return callback(null, true); // Cho phép request không có origin (vd: Postman)
+    if (
+      allowedOrigins.some((o) =>
+        o instanceof RegExp ? o.test(origin) : o === origin
+      )
+    ) {
       callback(null, true);
     } else {
       console.log("❌ Blocked by CORS:", origin);
