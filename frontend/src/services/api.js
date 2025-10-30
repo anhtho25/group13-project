@@ -2,10 +2,10 @@ import axios from "axios";
 
 // Cấu hình API với endpoint chính xác
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: `${process.env.REACT_APP_API_URL}/api`,
   headers: {
-    'Content-Type': 'application/json',
-  }
+    "Content-Type": "application/json",
+  },
 });
 
 // Nếu cần gửi token
