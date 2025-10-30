@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// Cấu hình API với endpoint chính xác
+// Cấu hình API với endpoint từ biến môi trường
 const API = axios.create({
-  baseURL: `${process.env.REACT_APP_API_URL}/api`,
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
   headers: {
     "Content-Type": "application/json",
   },
