@@ -83,9 +83,11 @@ const uploadAvatar = async (req, res) => {
     }
 
     res.status(200).json({
-      message: "Upload avatar thành công (Cloudinary)",
-      avatarUrl: result.secure_url,
-      user,
+      message: "Upload avatar thành công",
+      user: {
+        ...user.toObject(),
+        avatar: result.secure_url
+      }
     });
   } catch (error) {
     console.error("❌ Lỗi upload Cloudinary:", error);

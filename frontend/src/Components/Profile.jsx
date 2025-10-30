@@ -80,15 +80,23 @@ function Profile() {
       const res = await API.post('/profile/avatar', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const newAvatar = res.data.avatar || (res.data.user && res.data.user.avatar);
-      if (newAvatar) {
-        setProfile({ ...profile, avatar: newAvatar });
-        setOriginalProfile({ ...originalProfile, avatar: newAvatar });
+      if (res.data.user && res.data.user.avatar) {
+        const updatedUser = res.data.user;
+        setProfile(prev => ({
+          ...prev,
+          avatar: updatedUser.avatar,
+          updatedAt: updatedUser.updatedAt || new Date().toISOString()
+        }));
+        setOriginalProfile(prev => ({
+          ...prev,
+          avatar: updatedUser.avatar,
+          updatedAt: updatedUser.updatedAt || new Date().toISOString()
+        }));
         setSelectedFile(null);
         setSelectedPreview(null);
         setMessage('Tải ảnh thành công ✅');
       } else {
-        setMessage('Không nhận được URL ảnh từ server');
+        setMessage('Không nhận được thông tin avatar từ server');
       }
     } catch (err) {
       console.error(err);
