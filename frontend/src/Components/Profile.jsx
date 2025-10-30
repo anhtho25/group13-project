@@ -231,30 +231,97 @@ function Profile() {
                   <input name="email" type="email" value={profile.email} onChange={handleChange} className="w-full p-3 border border-gray-200 rounded-md" />
                 </div>
 
-                <div>
-                  <label className="block text-gray-700 mb-2">Link ảnh đại diện</label>
-                  <input name="avatar" value={profile.avatar || ''} onChange={handleChange} className="w-full p-3 border border-gray-200 rounded-md" placeholder="https://..." />
-                  <div className="mt-2">
-                    <label className="block text-sm text-gray-600">Hoặc tải ảnh từ máy</label>
-                    <input type="file" accept="image/*" onChange={handleFileSelect} className="mt-1" />
-                  </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-gray-700 mb-2 font-medium">Ảnh đại diện</label>
+                    
+                    {/* Current Avatar Preview */}
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-purple-100">
+                        {(selectedPreview || profile.avatar) ? (
+                          <img 
+                            src={selectedPreview || profile.avatar} 
+                            alt="Avatar Preview" 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://via.placeholder.com/96';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                            id="avatar-upload"
+                          />
+                          <label
+                            htmlFor="avatar-upload"
+                            className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                          >
+                            <svg className="-ml-1 mr-2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Chọn ảnh mới
+                          </label>
+                        </div>
+                        
+                        {selectedFile && (
+                          <div className="mt-2 flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={handleUploadAvatar}
+                              disabled={isSaving}
+                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                            >
+                              {isSaving ? (
+                                <>
+                                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                  </svg>
+                                  Đang tải...
+                                </>
+                              ) : 'Tải lên'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedFile(null);
+                                setSelectedPreview(null);
+                              }}
+                              className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                  {selectedPreview && (
-                    <div className="mt-2 flex items-center gap-3">
-                      <div className="w-28 h-28 rounded overflow-hidden border">
-                        <img src={selectedPreview} alt="preview" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <button type="button" onClick={handleUploadAvatar} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-md">{isSaving ? 'Đang tải...' : 'Tải ảnh lên'}</button>
-                        <button type="button" onClick={() => { setSelectedFile(null); setSelectedPreview(null); }} className="px-4 py-2 bg-gray-100 rounded-md">Hủy</button>
-                      </div>
+                    {/* URL Input */}
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Hoặc dùng URL ảnh</label>
+                      <input
+                        name="avatar"
+                        value={profile.avatar || ''}
+                        onChange={handleChange}
+                        className="w-full p-2 text-sm border border-gray-200 rounded-md"
+                        placeholder="https://..."
+                      />
                     </div>
-                  )}
-                  {!selectedPreview && profile.avatar && (
-                    <div className="w-28 h-28 mt-2 rounded overflow-hidden border">
-                      <img src={profile.avatar} alt="preview" className="w-full h-full object-cover" onError={(e)=>{e.target.onerror=null;e.target.src='https://via.placeholder.com/112'}} />
-                    </div>
-                  )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3">

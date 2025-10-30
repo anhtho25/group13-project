@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import API from "../services/api";
 import "../styles/custom.css";
 
@@ -42,6 +42,9 @@ function Login() {
           {message}
         </p>
       )}
+      <div className="mt-2 text-sm">
+        <Link to="/forgot-password" className="text-purple-600 hover:underline">Quên mật khẩu?</Link>
+      </div>
     </div>
   );
 }
