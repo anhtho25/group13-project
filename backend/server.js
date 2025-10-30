@@ -31,7 +31,7 @@ console.log('✅ Cloudinary configured successfully');
 // ===============================
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://group13-project-jade.vercel.app", // 👈 domain frontend vercel của m
+  "https://group13-project-3tf01ea2o-group13-projects-projects.vercel.app", // 👈 domain frontend vercel của m
 ];
 
 const corsOptions = {
